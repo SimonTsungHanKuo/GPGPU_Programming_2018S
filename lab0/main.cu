@@ -24,6 +24,8 @@ __global__ void Draw(char *frame) {
 			c = y == H-1 ? '\0' : '\n';
 		} else if (y == 0 or y == H-1 or x == 0 or x == W-2) {
 			c = ':';
+		} else if (y == H/2 or y == H/2-1 or x == W/2 or x == W/2-1) {
+			c = '*';
 		} else {
 			c = ' ';
 		}
