@@ -1,0 +1,158 @@
+\documentclass[12pt,a4paper]{article}
+
+% \newcommand*{\TypeChinese}{} % Chinese support
+\newcommand*{\AdvancedDocument}{} % include code and math
+\newcommand*{\WithHeader}{}
+
+% basic packages
+\usepackage[margin=2cm,headheight=15pt]{geometry}
+\usepackage{graphicx,subfigure,indentfirst,hyperref,colortbl,caption,cite,color,xcolor}
+\hypersetup{colorlinks=true,urlcolor=blue,linkcolor=blue}
+% for handling underscores
+\usepackage{lmodern,relsize}
+\usepackage[T1]{fontenc}
+\renewcommand{\_}{\textscale{.5}{\textunderscore}}
+
+\ifdefined\AdvancedDocument
+	% minted is better than listing.
+	\usepackage{minted}
+	% it requires minted of a newer version.
+	\setminted{linenos=true, frame=lines, framesep=2mm}	
+	\usepackage{amsmath,amssymb,bm}
+\fi
+
+\ifdefined\TypeChinese
+	\usepackage{xeCJK,fontspec}
+	\XeTeXlinebreaklocale "zh"
+	\XeTeXlinebreakskip = 0pt plus 1pt
+	\setmainfont{KaiGen Gothic TW}
+	\setCJKmainfont{KaiGen Gothic TW}
+	\setmonofont{Droid Sans Mono}
+	\renewcommand{\baselinestretch}{1.3}
+\fi
+
+\ifdefined\WithHeader
+	\usepackage{fancyhdr}
+	\fancypagestyle{plain}{
+		\fancyhf{}
+		\chead{GPU Programming 2018 Spring \textbar ~Dep. of CSIE, NTU}
+		\cfoot{\thepage}
+		\rfoot{Programming Assignment \#2}
+	}
+	\pagestyle{plain}
+	\renewcommand{\headrulewidth}{1pt}
+	\renewcommand{\footrulewidth}{2pt}
+\fi
+
+\newcommand{\figref}[1]{Figure \ref{Fig:#1}.}
+\newcommand{\tabref}[1]{Table \ref{Tab:#1}.}
+\newcommand{\lstref}[1]{Listing \ref{Lst:#1}.}
+% \graphicspath{{fig/}}
+
+\begin{document}
+\title{Programming Assignment \#2}
+\author{Author: Yu Sheng Lin \and Instructor: Wei Chao Chen}
+\maketitle
+
+\section{Goals}
+
+You have to
+
+\begin{enumerate}
+\item Learn how to use the Thrust library.
+\item Learn how to implement some parallel algorithms on GPU.
+\end{enumerate}
+
+in this assignment.
+
+\section{Requirements}
+
+This is a two-part fixed assignment.
+You are asked to implement the same functionality in both part.
+However, in part I you are only allowed to use existing libraries
+while in part II the efficiency of your code is also considered during grading.
+
+In this assignment you are required to count the position
+of each character inside the word it belongs to.
+\lstref{count} provides a sample input and output.
+
+\begin{listing}[ht]
+\begin{minted}{text}
+gpu qq  a hello   sonoda (input)
+123012001012345000123456 (output)
+\end{minted}
+\caption{Example: Count the Position in Words.}\label{Lst:count}
+\end{listing}
+
+You may easily come up with an $O(n)$ sequential algorithm
+and an $O(nk)$ parallel algorithm,
+where $n$ is the length of the input and $k$ is the maximum length of a word.
+
+The input is generated in a pseudo-random manner,
+while we will use a different random seed during grading.
+You can assume that $k=500,~n\approx 4\times10^7$ and
+the input only contains characters \verb+[a-z]+
+and we use linebreak \verb+'\n'+ as the spaces.
+
+You have to implement a function whose signature is \lstref{count_cpp}.
+All pointers are device pointers and \verb+text_size+ is the $n$.
+It should also be noticed that \verb+gridDim.x+ cannot exceed $2^{17}=131072$
+if you don't use \verb|-arch sm_30| (or higher)
+\footnote{We assume that you have a GPU newer than Kepler architecture.} compile flag.
+
+\begin{listing}[ht]
+\begin{minted}{cpp}
+void CountPosition1(const char *text, int *pos, int text_size);
+void CountPosition2(const char *text, int *pos, int text_size);
+\end{minted}
+\caption{The function signature of part I.}\label{Lst:count_cpp}
+\end{listing}
+
+\subsection{Part I: Using the Thrust Library (40pts)}\label{thrust}
+
+Thrust is a useful API including many common parallel computing patterns,
+and in this part you should only include
+\begin{itemize}
+\item Declaration of native and \verb+thrust::*+ types,
+\item A few \verb+struct+s with call operator and
+\item \verb+thrust::*+ and native CUDA functions like \verb+cudaFree+
+      (namely \verb+__global__+ functions are not allowed)
+\end{itemize}
+in \verb+CountPosition1+.
+
+Here are some hints:
+\begin{itemize}
+\item You will need the document \url{https://thrust.github.io/doc/modules.html}
+\item I have already included some necessary headers.
+\item If you write more than 10 lines, then you are probably wrong.
+\end{itemize}
+
+\subsection{Part II: Implement Your Own Kernel (60pts+15pts bonus)}
+
+In part II, you have to implement the same functionality from scratch,
+and {\color{red}{no external API and library is allowed}}.
+We provide some hints about the $O(n\ln k)$ algorithm in a separate PDF
+while it's not the only solution,
+and you can decide whether to read them by yourself.
+
+According to our experience, when $k=500$, $O(n\ln k)$ and $O(nk)$
+might have comparable speed. To achieve the best efficiency and
+outperform your classmate, we also challenge you to implement both and
+compare them if possible.
+According to the execution time of your program,
+at most 15pts bonus will be given.
+
+\section{Submission}
+
+\begin{itemize}
+\item The submission deadline is 2018/5/10 23:59 (Thur.).
+\item The efficiency of part I will NOT be considered during grading, but if you
+break the rules listed in part \ref{thrust}, you will get 0pt.
+\item The efficiency part II will also be considered during grading, and pure CPU implementations would be disqualified.
+\item You can only modify \verb+lab2/counting.cu+, and we will only copy this file from your repo.
+\item The compile flags are \verb|--std=c++11 -O2 -arch sm_50|, and the environment is ArchLinux with CUDA 9.1. Although we will test your code on a Linux machine with one GTX 970, you should not use platform dependent libraries.
+\item Do not hack the answer by inspecting the memory or modifying the stack. This is a course about GPGPU programming, not assembly programming.
+\item Please also refer to assignment \#0 for more details.
+\end{itemize}
+
+\end{document}
